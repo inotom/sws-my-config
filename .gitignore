@@ -1,0 +1,8 @@
+.DS_Store
+.htaccess
+*.swp
+*~
+*.log
+.pass
+.pwd
+.idea
