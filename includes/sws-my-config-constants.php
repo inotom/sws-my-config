@@ -2,7 +2,7 @@
 /**
  * Serendip My Config constant definition
  *
- * @package     Serendip
+ * @package Serendip
  */
 
 define( 'SWS_MY_CONFIG_SLUG', 'sws-my-config' );
