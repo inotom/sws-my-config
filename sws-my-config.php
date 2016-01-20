@@ -20,119 +20,184 @@ if ( ! function_exists( 'add_action' ) ) {
 	exit;
 }
 
-/**
- * 設定メニューに My Config ページを追加
- */
-add_action( 'admin_menu', function() {
-	$settings = require dirname( __FILE__ ) . '/includes/sws-my-config-settings.php';
-	add_options_page(
-		__( 'My Config', $settings['slug'] ),
-		__( 'My Config', $settings['slug'] ),
-		'manage_options', // My Config ページを操作する権限.
-		$settings['slug'],
-		'sws_my_config_settings_page_callback'
-	);
-} );
+require_once dirname( __FILE__ ) . '/includes/sws-my-config-constants.php';
 
-/**
- * My Config ページにフォームを出力
- *
- * @access public
- * @return void
- */
-function sws_my_config_settings_page_callback() {
-	$settings = require dirname( __FILE__ ) . '/includes/sws-my-config-settings.php';
-?>
-<div class="wrap">
-	<h2><?php esc_html_e( 'My Config', $settings['slug'] ); ?></h2>
-	<form action="options.php" method="POST">
-		<?php
-		do_settings_sections( $settings['page'] );
-		settings_fields( $settings['group'] );
-		submit_button();
-		?>
-	</form>
-</div>
-<?php
-}
+if ( is_admin() ) {
 
-/**
- * My Config ページを作成
- */
-add_action( 'admin_init', function() {
-	$settings = require dirname( __FILE__ ) . '/includes/sws-my-config-settings.php';
-	$sample = $settings['fields']['sample'];
-	// セクション (Sample Settings) を追加
-	add_settings_section(
-		'sws-sample-settings-section', // セクション ID
-		__( 'Sample Settings', $settings['slug'] ),
-		'sws_my_config_sample_settings_section_callback',
-		$settings['page'] // 表示するページ
-	);
-	// セクション (Sample Settings) にフィールド (Sample Text) を追加
-	add_settings_field(
-		$sample['key'],
-		__( $sample['label'], $settings['slug'] ),
-		'sws_my_config_sample_settings_field_callback',
-		$settings['page'], // 表示するページ
-		'sws-sample-settings-section', // 表示するセクション ID
-		array(
-			'label_for' => $sample['key'],
-		)
-	);
-	// 設定項目の登録
-	register_setting(
-		$settings['group'],    // 設定のグループ名
-		$sample['key'], // フィールド
-		'sws_my_config_sample_settings_field_sanitizing_callback' // サニタイズを行う関数[オプション].
-	);
-} );
+	require_once dirname( __FILE__ ) . '/includes/sws-my-config-sanitize.php';
 
-/**
- * Sample Settings セクションを出力
- *
- * @access public
- * @return void
- */
-function sws_my_config_sample_settings_section_callback() {
-?>
-<p>セクションの説明。</p>
-<?php
-}
+	$settings = require_once dirname( __FILE__ ) . '/includes/sws-my-config-settings.php';
 
-/**
- * Sample Text フィールドを出力
- *
- * @access public
- * @return void
- */
-function sws_my_config_sample_settings_field_callback() {
-	$settings = require dirname( __FILE__ ) . '/includes/sws-my-config-settings.php';
-	$sample = $settings['fields']['sample'];
-?>
-<input class="regular-text" type="text" name="<?php echo esc_attr( $sample['key'] ); ?>" id="<?php echo esc_attr( $sample['key'] ); ?>" value="<?php form_option( $sample['key'] ); ?>">
-<p class="description">フィールドの説明。</p>
-<?php
-}
-
-/**
- * Sample Text フィールドの値をサニタイジングする
- *
- * @param string $input フィールドの入力値.
- * @access public
- * @return string
- */
-function sws_my_config_sample_settings_field_sanitizing_callback( $input ) {
-	$settings = require dirname( __FILE__ ) . '/includes/sws-my-config-settings.php';
-	$sample = $settings['fields']['sample'];
-	if ( mb_strlen( $input, 'UTF-8' ) > 10 ) {
-		add_settings_error(
-			$sample['key'],
-			$sample['key'] . '-error',
-			__( $sample['label'] . ' は10文字以上は保存できません。', $settings['slug'] ),
-			'error'
+	/**
+	 * 設定メニューに My Config ページを追加
+	 */
+	add_action( 'admin_menu', function() {
+		add_options_page(
+			__( 'My Config', SWS_MY_CONFIG_SLUG ),
+			__( 'My Config', SWS_MY_CONFIG_SLUG ),
+			'manage_options', // My Config ページを操作する権限.
+			SWS_MY_CONFIG_SLUG,
+			function () { // My Config ページにフォームを出力.
+			?>
+			<div class="wrap">
+				<h2><?php esc_html_e( 'My Config', SWS_MY_CONFIG_SLUG ); ?></h2>
+				<form action="options.php" method="POST">
+					<?php
+					do_settings_sections( SWS_MY_CONFIG_PAGE );
+					settings_fields( SWS_MY_CONFIG_GROUP );
+					submit_button();
+					?>
+				</form>
+			</div>
+			<?php
+			}
 		);
-		$input = get_option( $sample['key'] );
+	} );
+
+	/**
+	 * My Config ページを作成
+	 */
+	add_action( 'admin_init', function() use ( $settings ) {
+		// セクション の追加
+		foreach ( $settings['sections'] as $section ) {
+			add_settings_section(
+				$section['key'], // セクション ID
+				__( $section['label'], SWS_MY_CONFIG_SLUG ),
+				function() {
+				?>
+				<p>セクションの説明。</p>
+				<?php
+				},
+				SWS_MY_CONFIG_PAGE // 表示するページ
+			);
+		}
+		// フィールドの追加
+		foreach ( $settings['fields'] as $field ) {
+			switch ( $field['type'] ) {
+				case 'checkbox':
+					sws_my_config_add_checkbox(
+						$settings,
+						$field
+					);
+				break;
+				default:
+					sws_my_config_add_text_field(
+						$settings,
+						$field
+					);
+				break;
+			}
+		}
+		// 設定項目の登録
+		register_setting(
+			SWS_MY_CONFIG_GROUP, // 設定のグループ名
+			SWS_MY_CONFIG_OPTION_KEY,   // フィールド
+			sws_my_config_make_sanitizing_func( $settings ) // サニタイズを行う関数[オプション].
+		);
+	} );
+
+	if ( ! function_exists( 'sws_my_config_add_text_field' ) ) {
+		/**
+		 * テキストフィールドを出力
+		 *
+		 * @param array $settings フォーム設定.
+		 * @param array $field_setting テキストフィールド設定.
+		 * @access public
+		 * @return void
+		 */
+		function sws_my_config_add_text_field( $settings, $field_setting ) {
+			$field_key = sprintf( '%s[%s]', SWS_MY_CONFIG_OPTION_KEY, $field_setting['key'] );
+			add_settings_field(
+				$field_key,
+				__( $field_setting['label'], SWS_MY_CONFIG_SLUG ),
+				function() use ( $field_key, $settings, $field_setting ) {
+					$options = get_option( SWS_MY_CONFIG_OPTION_KEY );
+					$value = ( ( false !== $options ) && array_key_exists( $field_setting['key'], $options ) ) ? $options[ $field_setting['key'] ] : '';
+				?>
+				<input class="regular-text" type="text" name="<?php echo esc_attr( $field_key ); ?>" id="<?php echo esc_attr( $field_key ); ?>" value="<?php echo esc_attr( $value ); ?>">
+				<p class="description"><?php echo esc_html( $field_setting['desc'] ); ?></p>
+				<?php
+				},
+				SWS_MY_CONFIG_PAGE,
+				$field_setting['section'], // 表示するセクション ID
+				array(
+					'label_for' => $field_key,
+				)
+			);
+		}
 	}
-	return $input;
+
+	if ( ! function_exists( 'sws_my_config_add_checkbox' ) ) {
+		/**
+		 * チェックボックスを出力
+		 *
+		 * @param array $settings フォーム設定.
+		 * @param array $field_setting テキストフィールド設定.
+		 * @access public
+		 * @return void
+		 */
+		function sws_my_config_add_checkbox( $settings, $field_setting ) {
+			$field_key = sprintf( '%s[%s]', SWS_MY_CONFIG_OPTION_KEY, $field_setting['key'] );
+			add_settings_field(
+				$field_key,
+				__( $field_setting['label'], SWS_MY_CONFIG_SLUG ),
+				function() use ( $field_key, $settings, $field_setting ) {
+					$options = get_option( SWS_MY_CONFIG_OPTION_KEY );
+					$status = ( ( false !== $options ) && array_key_exists( $field_setting['key'], $options ) ) ? $options[ $field_setting['key'] ] : '0';
+				?>
+				<input type="checkbox" name="<?php echo esc_attr( $field_key ); ?>" id="<?php echo esc_attr( $field_key ); ?>" value="1" <?php checked( 1, $status ); ?>>
+				<label for="<?php echo esc_attr( $field_key ); ?>"><?php echo esc_html( $field_setting['desc'] ); ?></label>
+				<?php
+				},
+				SWS_MY_CONFIG_PAGE, // 表示するページ
+				$field_setting['section'] // 表示するセクション ID
+			);
+		}
+	}
+}
+
+if ( ! function_exists( 'sws_my_config_get' ) ) {
+	/**
+	 * オプションの値を取得する
+	 *
+	 * @param string $field_key オプションのフィールドのキー.
+	 * @access public
+	 * @return mixed
+	 * @throws Exception Throw exception オプションにキーが存在しない場合例外を投げる.
+	 */
+	function sws_my_config_get( $field_key ) {
+		$option = get_option( SWS_MY_CONFIG_OPTION_KEY );
+		if ( false !== $option ) {
+			if ( ! array_key_exists( $field_key, $option ) ) {
+				throw new Exception( sprintf( '"%s" is not existing key.', $field_key ) );
+			}
+			return $option[ $field_key ];
+		}
+	}
+}
+
+if ( ! function_exists( 'sws_my_config_checked' ) ) {
+	/**
+	 * オプションのチェックボックスの状態を取得する
+	 *
+	 * @param string $field_key オプションのフィールドのキー.
+	 * @access public
+	 * @return boolean
+	 * @throws Exception Throw exception チェックボックスではない場合例外を投げる.
+	 */
+	function sws_my_config_checked( $field_key ) {
+		$option = get_option( SWS_MY_CONFIG_OPTION_KEY );
+		if ( false === $option ) {
+			return false;
+		}
+		if ( array_key_exists( $field_key, $option ) ) {
+			if ( '0' === $option[ $field_key ] ) {
+				return false;
+			}
+			if ( '1' === $option[ $field_key ] ) {
+				return true;
+			}
+		}
+		throw new Exception( sprintf( '"%s" is not checkbox key.', $field_key ) );
+	}
 }

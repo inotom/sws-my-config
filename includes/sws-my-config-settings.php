@@ -2,22 +2,41 @@
 /**
  * Serendip My Config settings
  *
- * @package     Serendip
- * @version     1.0
- * @author      iNo
- * @license     GPLv2 http://www.gnu.org/licenses/gpl-2.0.html
- * @copyright   2016 (c) Serendip
- * @link        http://www.serendip.ws/
+ * @package Serendip
  */
 
 return array(
-	'slug' => 'sws-my-config',
-	'page' => 'sws-my-config-settings',
-	'group' => 'sws-my-config-settings-group',
+	'sections' => array(
+		array(
+			'key' => 'sws-sample-settings-section',
+			'label' => 'サンプル設定',
+		),
+		array(
+			'key' => 'sws-other-settings-section',
+			'label' => 'その他の設定',
+		),
+	),
 	'fields' => array(
-		'sample' => array(
-			'key' => 'sws-sample-settings-field',
+		array(
+			'type' => 'text',
+			'section' => 'sws-sample-settings-section',
+			'key' => 'text1',
 			'label' => 'Sample Text',
+			'desc' => 'フィールドの説明。',
+		),
+		array(
+			'type' => 'checkbox',
+			'section' => 'sws-sample-settings-section',
+			'key' => 'check1',
+			'label' => 'Sample Checkbox',
+			'desc' => 'チェックボックスの説明。',
+		),
+		array(
+			'type' => 'text',
+			'section' => 'sws-other-settings-section',
+			'key' => 'other-text2',
+			'label' => 'その他テキスト',
+			'desc' => 'フィールドの説明。',
 		),
 	),
 );
