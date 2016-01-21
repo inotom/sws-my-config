@@ -31,7 +31,9 @@ function sws_my_config_make_sanitizing_func( $settings ) {
 						'error'
 					);
 					$option = get_option( SWS_MY_CONFIG_OPTION_KEY );
-					$input[ $field['key'] ] = $option[ $field['key'] ];
+					if ( false !== $option ) {
+						$input[ $field['key'] ] = $option[ $field['key'] ];
+					}
 				}
 			}
 		}
