@@ -30,7 +30,8 @@ function sws_my_config_make_sanitizing_func( $settings ) {
 						__( $field['label'] . ' は10文字以上は保存できません。', SWS_MY_CONFIG_SLUG ),
 						'error'
 					);
-					$input[ $field['key'] ] = get_option( SWS_MY_CONFIG_OPTION_KEY )[ $field['key'] ];
+					$option = get_option( SWS_MY_CONFIG_OPTION_KEY );
+					$input[ $field['key'] ] = $option[ $field['key'] ];
 				}
 			}
 		}
